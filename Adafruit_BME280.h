@@ -161,18 +161,9 @@ class Adafruit_BME280 {
             STANDBY_MS_1000 = 0b101
         };
     
-        // constructors
-        Adafruit_BME280(void);
-        Adafruit_BME280(int8_t cspin);
-        Adafruit_BME280(int8_t cspin, int8_t mosipin, int8_t misopin, int8_t sckpin);
-		
-		bool begin(void);
-		bool begin(TwoWire *theWire);
-		bool begin(uint8_t addr);
-        bool begin(uint8_t addr, TwoWire *theWire);
 		bool init();
 
-	void setSampling(sensor_mode mode              = MODE_NORMAL,
+    	void setSampling(sensor_mode mode  = MODE_NORMAL,
 			 sensor_sampling tempSampling  = SAMPLING_X16,
 			 sensor_sampling pressSampling = SAMPLING_X16,
 			 sensor_sampling humSampling   = SAMPLING_X16,
@@ -187,27 +178,28 @@ class Adafruit_BME280 {
         
         float readAltitude(float seaLevel);
         float seaLevelForAltitude(float altitude, float pressure);
-
         
-    private:
-		TwoWire *_wire;
+    protected:
+		// TwoWire *_wire;
         void readCoefficients(void);
         bool isReadingCalibration(void);
-        uint8_t spixfer(uint8_t x);
+        //uint8_t spixfer(uint8_t x);
 
-        void      write8(byte reg, byte value);
-        uint8_t   read8(byte reg);
-        uint16_t  read16(byte reg);
-        uint32_t  read24(byte reg);
+        // Abstract functions implemented in derived classes depending on comm. method
+        virtual void      write8(byte reg, byte value) = 0;
+        virtual uint8_t   read8(byte reg) = 0;
+        virtual uint16_t  read16(byte reg) = 0;
+        virtual uint32_t  read24(byte reg) = 0;
+
         int16_t   readS16(byte reg);
         uint16_t  read16_LE(byte reg); // little endian
         int16_t   readS16_LE(byte reg); // little endian
 
-        uint8_t   _i2caddr;
-        int32_t   _sensorID;
+        //uint8_t   _i2caddr;
+        //int32_t   _sensorID;
         int32_t   t_fine;
 
-        int8_t _cs, _mosi, _miso, _sck;
+        //int8_t _cs, _mosi, _miso, _sck;
 
         bme280_calib_data _bme280_calib;
 
@@ -295,6 +287,47 @@ class Adafruit_BME280 {
             }
         };
         ctrl_hum _humReg;
+};
+
+class Adafruit_BME280_I2C : public Adafruit_BME280
+{
+    public:
+        Adafruit_BME280_I2C(void);
+
+//        bool begin(TwoWire *theWire);
+        bool begin(uint8_t addr = BME280_ADDRESS);
+        bool begin(TwoWire *theWire, uint8_t addr = BME280_ADDRESS);
+        bool init();
+
+    private:
+        TwoWire *_wire;
+
+        void      write8(byte reg, byte value);
+        uint8_t   read8(byte reg);
+        uint16_t  read16(byte reg);
+        uint32_t  read24(byte reg);
+
+         uint8_t   _i2caddr;
+};
+
+class Adafruit_BME280_SPI : public Adafruit_BME280
+{
+    public:
+        Adafruit_BME280_SPI(int8_t cspin);
+        Adafruit_BME280_SPI(int8_t cspin, int8_t mosipin, int8_t misopin, int8_t sckpin);
+
+        bool init();
+
+    private:
+        uint8_t spixfer(uint8_t x);
+
+        void      write8(byte reg, byte value);
+        uint8_t   read8(byte reg);
+        uint16_t  read16(byte reg);
+        uint32_t  read24(byte reg);
+
+        int8_t _cs, _mosi, _miso, _sck;
+
 };
 
 #endif
