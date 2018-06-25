@@ -17,6 +17,8 @@
 #include "Arduino.h"
 #include <Wire.h>
 #include <SPI.h>
+#include <math.h>
+
 #include "Adafruit_BME280.h"
 
 /***************************************************************************
@@ -38,17 +40,12 @@ Adafruit_BME280_SPI::Adafruit_BME280_SPI(int8_t cspin, int8_t mosipin, int8_t mi
     @brief  Initialise sensor with given parameters / settings
 */
 /**************************************************************************/
-// bool Adafruit_BME280_I2C::begin(TwoWire *theWire)
-// {
-// 	_wire = theWire;
-// 	_i2caddr = BME280_ADDRESS;
-// 	return init();
-// }
-
 bool Adafruit_BME280_I2C::begin(uint8_t addr)
 {
 	_i2caddr = addr;
 	_wire = &Wire;
+
+    _wire->begin();
 	return init();
 }
 
@@ -56,15 +53,10 @@ bool Adafruit_BME280_I2C::begin(TwoWire *theWire, uint8_t addr)
 {
     _i2caddr = addr;
 	_wire = theWire;
+
+    _wire->begin();
 	return init();
 }
-
-// bool Adafruit_BME280_I2C::begin(void)
-// {
-//     _i2caddr = BME280_ADDRESS;
-// 	_wire = &Wire;
-// 	return init();
-// }
 
 bool Adafruit_BME280::init() {
     // check if sensor, i.e. the chip ID is correct
@@ -91,15 +83,7 @@ bool Adafruit_BME280::init() {
     return true;
 }
 
-bool Adafruit_BME280_I2C::init()
-{
-    // init I2C
-    _wire -> begin();
-
-    return Adafruit_BME280::init();
-};
-
-bool Adafruit_BME280_SPI::init()
+bool Adafruit_BME280_SPI::begin()
 {
     digitalWrite(_cs, HIGH);
     pinMode(_cs, OUTPUT);
@@ -124,8 +108,6 @@ bool Adafruit_BME280_SPI::init()
     don't get confused about the library requiring an address.
 */
 /**************************************************************************/
-
-
 void Adafruit_BME280::setSampling(sensor_mode       mode,
 		 sensor_sampling   tempSampling,
 		 sensor_sampling   pressSampling,
@@ -135,13 +117,13 @@ void Adafruit_BME280::setSampling(sensor_mode       mode,
     _measReg.mode     = mode;
     _measReg.osrs_t   = tempSampling;
     _measReg.osrs_p   = pressSampling;
-        
-    
+
+
     _humReg.osrs_h    = humSampling;
     _configReg.filter = filter;
     _configReg.t_sb   = duration;
 
-    
+
     // you must make sure to also set REGISTER_CONTROL after setting the
     // CONTROLHUMID register, otherwise the values won't be applied (see DS 5.4.3)
     write8(BME280_REGISTER_CONTROLHUMID, _humReg.get());
@@ -203,7 +185,7 @@ void Adafruit_BME280_SPI::write8(byte reg, byte value) {
     @brief  Reads an 8 bit value over I2C or SPI
 */
 /**************************************************************************/
-uint8_t Adafruit_BME280_I2C::read8(byte reg) {    
+uint8_t Adafruit_BME280_I2C::read8(byte reg) {
     _wire -> beginTransmission((uint8_t)_i2caddr);
     _wire -> write((uint8_t)reg);
     _wire -> endTransmission();
@@ -212,7 +194,7 @@ uint8_t Adafruit_BME280_I2C::read8(byte reg) {
     return _wire -> read();
 }
 
-uint8_t Adafruit_BME280_SPI::read8(byte reg) {    
+uint8_t Adafruit_BME280_SPI::read8(byte reg) {
     if (_sck == -1)
         SPI.beginTransaction(SPISettings(500000, MSBFIRST, SPI_MODE0));
     digitalWrite(_cs, LOW);
@@ -259,7 +241,7 @@ uint16_t Adafruit_BME280_SPI::read16(byte reg)
 
 /**************************************************************************/
 /*!
-    
+
 */
 /**************************************************************************/
 uint16_t Adafruit_BME280::read16_LE(byte reg) {
@@ -281,7 +263,7 @@ int16_t Adafruit_BME280::readS16(byte reg)
 
 /**************************************************************************/
 /*!
-   
+
 */
 /**************************************************************************/
 int16_t Adafruit_BME280::readS16_LE(byte reg)
@@ -342,7 +324,7 @@ uint32_t Adafruit_BME280_SPI::read24(byte reg)
 */
 /**************************************************************************/
 void Adafruit_BME280::takeForcedMeasurement()
-{   
+{
     // If we are in forced mode, the BME sensor goes back to sleep after each
     // measurement and we need to set it to forced mode once at this point, so
     // it will take the next measurement and then return to sleep again.
@@ -416,7 +398,7 @@ float Adafruit_BME280::readTemperature(void)
 
     var1 = ((((adc_T>>3) - ((int32_t)_bme280_calib.dig_T1 <<1))) *
             ((int32_t)_bme280_calib.dig_T2)) >> 11;
-             
+
     var2 = (((((adc_T>>4) - ((int32_t)_bme280_calib.dig_T1)) *
               ((adc_T>>4) - ((int32_t)_bme280_calib.dig_T1))) >> 12) *
             ((int32_t)_bme280_calib.dig_T3)) >> 14;
@@ -475,7 +457,7 @@ float Adafruit_BME280::readHumidity(void) {
     int32_t adc_H = read16(BME280_REGISTER_HUMIDDATA);
     if (adc_H == 0x8000) // value in case humidity measurement was disabled
         return NAN;
-        
+
     int32_t v_x1_u32r;
 
     v_x1_u32r = (t_fine - ((int32_t)76800));
@@ -521,8 +503,8 @@ float Adafruit_BME280::readAltitude(float seaLevel)
 
 /**************************************************************************/
 /*!
-    Calculates the pressure at sea level (in hPa) from the specified altitude 
-    (in meters), and atmospheric pressure (in hPa).  
+    Calculates the pressure at sea level (in hPa) from the specified altitude
+    (in meters), and atmospheric pressure (in hPa).
     @param  altitude      Altitude in meters
     @param  atmospheric   Atmospheric pressure in hPa
 */

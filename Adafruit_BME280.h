@@ -23,7 +23,6 @@
  #include "WProgram.h"
 #endif
 
-#include <Adafruit_Sensor.h>
 #include <Wire.h>
 
 /*=========================================================================
@@ -149,7 +148,7 @@ class Adafruit_BME280 {
             FILTER_X16 = 0b100
         };
 
-        // standby durations in ms 
+        // standby durations in ms
         enum standby_duration {
             STANDBY_MS_0_5  = 0b000,
             STANDBY_MS_10   = 0b110,
@@ -160,30 +159,28 @@ class Adafruit_BME280 {
             STANDBY_MS_500  = 0b100,
             STANDBY_MS_1000 = 0b101
         };
-    
-		bool init();
 
-    	void setSampling(sensor_mode mode  = MODE_NORMAL,
-			 sensor_sampling tempSampling  = SAMPLING_X16,
-			 sensor_sampling pressSampling = SAMPLING_X16,
-			 sensor_sampling humSampling   = SAMPLING_X16,
-			 sensor_filter filter          = FILTER_OFF,
-			 standby_duration duration     = STANDBY_MS_0_5
-			 );
-                   
+        void setSampling(sensor_mode mode  = MODE_NORMAL,
+              sensor_sampling tempSampling  = SAMPLING_X16,
+              sensor_sampling pressSampling = SAMPLING_X16,
+              sensor_sampling humSampling   = SAMPLING_X16,
+              sensor_filter filter          = FILTER_OFF,
+              standby_duration duration     = STANDBY_MS_0_5
+              );
+
         void takeForcedMeasurement();
         float readTemperature(void);
         float readPressure(void);
         float readHumidity(void);
-        
+
         float readAltitude(float seaLevel);
         float seaLevelForAltitude(float altitude, float pressure);
         
     protected:
-		// TwoWire *_wire;
+        bool init();
+
         void readCoefficients(void);
         bool isReadingCalibration(void);
-        //uint8_t spixfer(uint8_t x);
 
         // Abstract functions implemented in derived classes depending on comm. method
         virtual void      write8(byte reg, byte value) = 0;
@@ -195,11 +192,7 @@ class Adafruit_BME280 {
         uint16_t  read16_LE(byte reg); // little endian
         int16_t   readS16_LE(byte reg); // little endian
 
-        //uint8_t   _i2caddr;
-        //int32_t   _sensorID;
         int32_t   t_fine;
-
-        //int8_t _cs, _mosi, _miso, _sck;
 
         bme280_calib_data _bme280_calib;
 
@@ -234,7 +227,7 @@ class Adafruit_BME280 {
         };
         config _configReg;
 
-        
+
         // The ctrl_meas register
         struct ctrl_meas {
             // temperature oversampling
@@ -267,7 +260,7 @@ class Adafruit_BME280 {
         };
         ctrl_meas _measReg;
 
-        
+
         // The ctrl_hum register
         struct ctrl_hum {
             // unused - don't set
@@ -294,10 +287,8 @@ class Adafruit_BME280_I2C : public Adafruit_BME280
     public:
         Adafruit_BME280_I2C(void);
 
-//        bool begin(TwoWire *theWire);
         bool begin(uint8_t addr = BME280_ADDRESS);
         bool begin(TwoWire *theWire, uint8_t addr = BME280_ADDRESS);
-        bool init();
 
     private:
         TwoWire *_wire;
@@ -307,7 +298,7 @@ class Adafruit_BME280_I2C : public Adafruit_BME280
         uint16_t  read16(byte reg);
         uint32_t  read24(byte reg);
 
-         uint8_t   _i2caddr;
+        uint8_t   _i2caddr;
 };
 
 class Adafruit_BME280_SPI : public Adafruit_BME280
@@ -316,7 +307,7 @@ class Adafruit_BME280_SPI : public Adafruit_BME280
         Adafruit_BME280_SPI(int8_t cspin);
         Adafruit_BME280_SPI(int8_t cspin, int8_t mosipin, int8_t misopin, int8_t sckpin);
 
-        bool init();
+        bool begin();
 
     private:
         uint8_t spixfer(uint8_t x);
