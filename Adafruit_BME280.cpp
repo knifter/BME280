@@ -25,25 +25,7 @@
 /*!
     @brief  Initialise sensor with given parameters / settings
 */
-/**************************************************************************/
-// bool BME280_I2C::begin(uint8_t addr)
-// {
-// 	_i2caddr = addr;
-// 	_wire = &Wire;
-//
-//     _wire->begin();
-// 	return init();
-// }
-//
-// bool BME280_I2C::begin(TwoWire *theWire, uint8_t addr)
-// {
-//     _i2caddr = addr;
-// 	_wire = theWire;
-//
-//     _wire->begin();
-// 	return init();
-// }
-
+/**************************************************************************
 bool BME280::begin()
 {
     TwoWireDevice::begin();
@@ -69,7 +51,7 @@ bool BME280::begin()
     // use defaults
     setSampling();
 
-    delay(300);
+    delay(300); // TODO: needed?
 
     return true;
 }
@@ -213,12 +195,12 @@ bool BME280::isReadingCalibration(void)
   return (rStatus & (1 << 0)) != 0;
 }
 
-
 /**************************************************************************/
 /*!
     @brief  Returns the temperature from the sensor
 */
 /**************************************************************************/
+//Datasheet code:
 // 	// Returns temperature in DegC, resolution is 0.01 DegC. Output value of “5123” equals 51.23 DegC.
 // 	// t_fine carries fine temperature as global value
 //
