@@ -14,117 +14,32 @@
   Written by Limor Fried & Kevin Townsend for Adafruit Industries.
   BSD license, all text above must be included in any redistribution
  ***************************************************************************/
-#ifndef __BME280_H__
-#define __BME280_H__
+#ifndef __BME280_H
+#define __BME280_H
 
-#if (ARDUINO >= 100)
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+#include "Arduino.h"
 
-#include <Wire.h>
+#include <TwoWireDevice.h>
 
 /*=========================================================================
     I2C ADDRESS/BITS
     -----------------------------------------------------------------------*/
-    #define BME280_ADDRESS                (0x77)
+#define BME280_ADDRESS_DEFAULT              (0x76)
 /*=========================================================================*/
 
-/*=========================================================================
-    REGISTERS
-    -----------------------------------------------------------------------*/
-    enum
-    {
-        BME280_REGISTER_DIG_T1              = 0x88,
-        BME280_REGISTER_DIG_T2              = 0x8A,
-        BME280_REGISTER_DIG_T3              = 0x8C,
-
-        BME280_REGISTER_DIG_P1              = 0x8E,
-        BME280_REGISTER_DIG_P2              = 0x90,
-        BME280_REGISTER_DIG_P3              = 0x92,
-        BME280_REGISTER_DIG_P4              = 0x94,
-        BME280_REGISTER_DIG_P5              = 0x96,
-        BME280_REGISTER_DIG_P6              = 0x98,
-        BME280_REGISTER_DIG_P7              = 0x9A,
-        BME280_REGISTER_DIG_P8              = 0x9C,
-        BME280_REGISTER_DIG_P9              = 0x9E,
-
-        BME280_REGISTER_DIG_H1              = 0xA1,
-        BME280_REGISTER_DIG_H2              = 0xE1,
-        BME280_REGISTER_DIG_H3              = 0xE3,
-        BME280_REGISTER_DIG_H4              = 0xE4,
-        BME280_REGISTER_DIG_H5              = 0xE5,
-        BME280_REGISTER_DIG_H6              = 0xE7,
-
-        BME280_REGISTER_CHIPID             = 0xD0,
-        BME280_REGISTER_VERSION            = 0xD1,
-        BME280_REGISTER_SOFTRESET          = 0xE0,
-
-        BME280_REGISTER_CAL26              = 0xE1,  // R calibration stored in 0xE1-0xF0
-
-        BME280_REGISTER_CONTROLHUMID       = 0xF2,
-        BME280_REGISTER_STATUS             = 0XF3,
-        BME280_REGISTER_CONTROL            = 0xF4,
-        BME280_REGISTER_CONFIG             = 0xF5,
-        BME280_REGISTER_PRESSUREDATA       = 0xF7,
-        BME280_REGISTER_TEMPDATA           = 0xFA,
-        BME280_REGISTER_HUMIDDATA          = 0xFD
-    };
-
-/*=========================================================================*/
-
-/*=========================================================================
-    CALIBRATION DATA
-    -----------------------------------------------------------------------*/
-    typedef struct
-    {
-        uint16_t dig_T1;
-        int16_t  dig_T2;
-        int16_t  dig_T3;
-
-        uint16_t dig_P1;
-        int16_t  dig_P2;
-        int16_t  dig_P3;
-        int16_t  dig_P4;
-        int16_t  dig_P5;
-        int16_t  dig_P6;
-        int16_t  dig_P7;
-        int16_t  dig_P8;
-        int16_t  dig_P9;
-
-        uint8_t  dig_H1;
-        int16_t  dig_H2;
-        uint8_t  dig_H3;
-        int16_t  dig_H4;
-        int16_t  dig_H5;
-        int8_t   dig_H6;
-    } bme280_calib_data;
-/*=========================================================================*/
-
-/*
-class Adafruit_BME280_Unified : public Adafruit_Sensor
-{
-  public:
-    Adafruit_BME280_Unified(int32_t sensorID = -1);
-
-    bool  begin(uint8_t addr = BME280_ADDRESS);
-    void  getTemperature(float *temp);
-    void  getPressure(float *pressure);
-    float pressureToAltitude(float seaLevel, float atmospheric, float temp);
-    float seaLevelForAltitude(float altitude, float atmospheric, float temp);
-    void  getEvent(sensors_event_t*);
-    void  getSensor(sensor_t*);
-
-  private:
-    uint8_t   _i2c_addr;
-    int32_t   _sensorID;
-};
-
-*/
-
-class Adafruit_BME280 {
+class BME280: public TwoWireDevice {
     public:
+        BME280(TwoWire *wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(wire, addr) {};
+        BME280(const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(addr) {};
+
+        bool begin();
+        uint8_t readManufacturerId();
+        void reset();
+        uint8_t getLastError();
+
+        // bool begin(const uint8_t addr = BME280_ADDRESS_DEFAULT) { return TwoWireDevice::begin(addr) && init(); };
+        // bool begin(TwoWire *wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) { return TwoWireDevice::begin(wire, addr) && init(); };
+
         enum sensor_sampling {
             SAMPLING_NONE = 0b000,
             SAMPLING_X1   = 0b001,
@@ -175,29 +90,90 @@ class Adafruit_BME280 {
 
         float readAltitude(float seaLevel);
         float seaLevelForAltitude(float altitude, float pressure);
-        
+        float readAltitudeTC(float seaLevel, float atmospheric, float temperature);
+
     protected:
         bool init();
 
         void readCoefficients(void);
         bool isReadingCalibration(void);
 
-        // Abstract functions implemented in derived classes depending on comm. method
-        virtual void      write8(byte reg, byte value) = 0;
-        virtual uint8_t   read8(byte reg) = 0;
-        virtual uint16_t  read16(byte reg) = 0;
-        virtual uint32_t  read24(byte reg) = 0;
+        int16_t   readS16(uint8_t reg);
+        uint16_t  read16_LE(uint8_t reg); // little endian
+        int16_t   readS16_LE(uint8_t reg); // little endian
 
-        int16_t   readS16(byte reg);
-        uint16_t  read16_LE(byte reg); // little endian
-        int16_t   readS16_LE(byte reg); // little endian
+        /*=========================================================================
+        // REGISTERS
+        -----------------------------------------------------------------------*/
+        enum
+        {
+            REG_DIG_T1              = 0x88,
+            REG_DIG_T2              = 0x8A,
+            REG_DIG_T3              = 0x8C,
 
-        int32_t   t_fine;
+            REG_DIG_P1              = 0x8E,
+            REG_DIG_P2              = 0x90,
+            REG_DIG_P3              = 0x92,
+            REG_DIG_P4              = 0x94,
+            REG_DIG_P5              = 0x96,
+            REG_DIG_P6              = 0x98,
+            REG_DIG_P7              = 0x9A,
+            REG_DIG_P8              = 0x9C,
+            REG_DIG_P9              = 0x9E,
 
-        bme280_calib_data _bme280_calib;
+            REG_DIG_H1              = 0xA1,
+            REG_DIG_H2              = 0xE1,
+            REG_DIG_H3              = 0xE3,
+            REG_DIG_H4              = 0xE4,
+            REG_DIG_H5              = 0xE5,
+            REG_DIG_H6              = 0xE7,
+
+            REG_CHIPID             = 0xD0,
+            REG_VERSION            = 0xD1,
+            REG_SOFTRESET          = 0xE0,
+
+            REG_CAL26              = 0xE1,  // R calibration stored in 0xE1-0xF0
+
+            REG_CONTROLHUMID       = 0xF2,
+            REG_STATUS             = 0XF3,
+            REG_CONTROL            = 0xF4,
+            REG_CONFIG             = 0xF5,
+            REG_PRESSUREDATA       = 0xF7,
+            REG_TEMPDATA           = 0xFA,
+            REG_HUMIDDATA          = 0xFD
+        };
+        /*=========================================================================*/
+
+        /*=========================================================================
+        CALIBRATION DATA
+        -----------------------------------------------------------------------*/
+        typedef struct
+        {
+            uint16_t dig_T1;
+            int16_t  dig_T2;
+            int16_t  dig_T3;
+
+            uint16_t dig_P1;
+            int16_t  dig_P2;
+            int16_t  dig_P3;
+            int16_t  dig_P4;
+            int16_t  dig_P5;
+            int16_t  dig_P6;
+            int16_t  dig_P7;
+            int16_t  dig_P8;
+            int16_t  dig_P9;
+
+            uint8_t  dig_H1;
+            int16_t  dig_H2;
+            uint8_t  dig_H3;
+            int16_t  dig_H4;
+            int16_t  dig_H5;
+            int8_t   dig_H6;
+        } calib_data_t;
+        /*=========================================================================*/
 
         // The config register
-        struct config {
+        typedef struct {
             // inactive duration (standby time) in normal mode
             // 000 = 0.5 ms
             // 001 = 62.5 ms
@@ -222,14 +198,13 @@ class Adafruit_BME280 {
             unsigned int spi3w_en : 1;
 
             unsigned int get() {
-                return (t_sb << 5) | (filter << 3) | spi3w_en;
+                return (t_sb << 5) | (filter << 2) | spi3w_en;
             }
-        };
-        config _configReg;
-
+        } config_t;
+        config_t _configReg;
 
         // The ctrl_meas register
-        struct ctrl_meas {
+        typedef struct {
             // temperature oversampling
             // 000 = skipped
             // 001 = x1
@@ -255,14 +230,13 @@ class Adafruit_BME280 {
             unsigned int mode : 2;
 
             unsigned int get() {
-                return (osrs_t << 5) | (osrs_p << 3) | mode;
+                return (osrs_t << 5) | (osrs_p << 2) | mode;
             }
-        };
-        ctrl_meas _measReg;
-
+        } ctrl_meas_t;
+        ctrl_meas_t _measReg;
 
         // The ctrl_hum register
-        struct ctrl_hum {
+        typedef struct {
             // unused - don't set
             unsigned int none : 5;
 
@@ -278,47 +252,15 @@ class Adafruit_BME280 {
             unsigned int get() {
                 return (osrs_h);
             }
-        };
-        ctrl_hum _humReg;
-};
+        } ctrl_hum_t;
+        ctrl_hum_t _humReg;
 
-class Adafruit_BME280_I2C : public Adafruit_BME280
-{
-    public:
-        Adafruit_BME280_I2C(void);
-
-        bool begin(uint8_t addr = BME280_ADDRESS);
-        bool begin(TwoWire *theWire, uint8_t addr = BME280_ADDRESS);
+        int32_t   t_fine;
+        calib_data_t _bme280_calib;
 
     private:
-        TwoWire *_wire;
-
-        void      write8(byte reg, byte value);
-        uint8_t   read8(byte reg);
-        uint16_t  read16(byte reg);
-        uint32_t  read24(byte reg);
-
-        uint8_t   _i2caddr;
+        BME280(const BME280&);
+        BME280& operator=(const BME280&);
 };
 
-class Adafruit_BME280_SPI : public Adafruit_BME280
-{
-    public:
-        Adafruit_BME280_SPI(int8_t cspin);
-        Adafruit_BME280_SPI(int8_t cspin, int8_t mosipin, int8_t misopin, int8_t sckpin);
-
-        bool begin();
-
-    private:
-        uint8_t spixfer(uint8_t x);
-
-        void      write8(byte reg, byte value);
-        uint8_t   read8(byte reg);
-        uint16_t  read16(byte reg);
-        uint32_t  read24(byte reg);
-
-        int8_t _cs, _mosi, _miso, _sck;
-
-};
-
-#endif
+#endif // __BME280_H
