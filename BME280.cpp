@@ -21,17 +21,49 @@
 
 #include "BME280.h"
 
+#define REG_DIG_T1              0x88
+#define REG_DIG_T2              0x8A
+#define REG_DIG_T3              0x8C
+#define REG_DIG_P1              0x8E
+#define REG_DIG_P2              0x90
+#define REG_DIG_P3              0x92
+#define REG_DIG_P4              0x94
+#define REG_DIG_P5              0x96
+#define REG_DIG_P6              0x98
+#define REG_DIG_P7              0x9A
+#define REG_DIG_P8              0x9C
+#define REG_DIG_P9              0x9E
+#define REG_DIG_H1              0xA1
+#define REG_DIG_H2              0xE1
+#define REG_DIG_H3              0xE3
+#define REG_DIG_H4              0xE4
+#define REG_DIG_H5              0xE5
+#define REG_DIG_H6              0xE7
+#define REG_CHIPID              0xD0
+    #define CHIPID_IS           0x60
+// #define REG_VERSION             0xD1
+#define REG_SOFTRESET           0xE0
+    #define SOFTRESET_RESET     0xB6
+#define REG_CONTROLHUMID        0xF2
+#define REG_STATUS              0XF3
+    #define STATUS_UPDATE       0x01
+    #define STATUS_MEASURING    0x08
+#define REG_CONTROL             0xF4
+#define REG_CONFIG              0xF5
+#define REG_PRESSUREDATA        0xF7
+#define REG_TEMPDATA            0xFA
+#define REG_HUMIDDATA           0xFD
+
 /**************************************************************************/
 /*!
     @brief  Initialise sensor with given parameters / settings
 */
-/**************************************************************************
 bool BME280::begin()
 {
     TwoWireDevice::begin();
 
     // check if sensor, i.e. the chip ID is correct
-    if(readManufacturerId() != 0x60)
+    if(readManufacturerId() != CHIPID_IS)
         return false;
 
     // reset the device using soft-reset
@@ -63,7 +95,7 @@ uint8_t BME280::readManufacturerId()
 
 void BME280::reset()
 {
-    write8(REG_SOFTRESET, 0xB6);
+    write8(REG_SOFTRESET, SOFTRESET_RESET);
     return;
 }
 
@@ -99,38 +131,6 @@ void BME280::setSampling(sensor_mode       mode,
 
 /**************************************************************************/
 /*!
-
-*/
-/**************************************************************************/
-uint16_t BME280::read16_LE(uint8_t reg)
-{
-    uint16_t temp = read16(reg);
-    return (temp >> 8) | (temp << 8);
-}
-
-
-/**************************************************************************/
-/*!
-    @brief  Reads a signed 16 bit value over I2C or SPI
-*/
-/**************************************************************************/
-int16_t BME280::readS16(uint8_t reg)
-{
-    return (int16_t)read16(reg);
-}
-
-/**************************************************************************/
-/*!
-
-*/
-/**************************************************************************/
-int16_t BME280::readS16_LE(uint8_t reg)
-{
-    return (int16_t)read16_LE(reg);
-}
-
-/**************************************************************************/
-/*!
     @brief  Take a new measurement (only possible in forced mode)
 */
 /**************************************************************************/
@@ -140,13 +140,15 @@ void BME280::takeForcedMeasurement()
     // measurement and we need to set it to forced mode once at this point, so
     // it will take the next measurement and then return to sleep again.
     // In normal mode simply does new measurements periodically.
-    if (_measReg.mode == MODE_FORCED) {
+    if (_measReg.mode == MODE_FORCED) 
+    {
         // set to forced mode, i.e. "take next measurement"
         write8(REG_CONTROL, _measReg.get());
+
         // wait until measurement has been completed, otherwise we would read
         // the values from the last measurement
-        while (read8(REG_STATUS) & 0x08)
-		delay(1);
+        while (read8(REG_STATUS) & STATUS_MEASURING)
+		    delay(1);
     }
 }
 
@@ -190,9 +192,7 @@ void BME280::readCoefficients(void)
 /**************************************************************************/
 bool BME280::isReadingCalibration(void)
 {
-  uint8_t const rStatus = read8(REG_STATUS);
-
-  return (rStatus & (1 << 0)) != 0;
+  return (read8(REG_STATUS) & STATUS_UPDATE);
 }
 
 /**************************************************************************/
@@ -376,4 +376,15 @@ float BME280::seaLevelForAltitude(float altitude, float atmospheric)
     //  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
 
     return atmospheric / pow(1.0 - (altitude/44330.0), 5.255);
+}
+
+uint16_t BME280::read16_LE(uint8_t reg)
+{
+    uint16_t temp = read16(reg);
+    return (temp >> 8) | (temp << 8);
+}
+
+int16_t BME280::readS16_LE(uint8_t reg)
+{
+    return (int16_t)read16_LE(reg);
 }

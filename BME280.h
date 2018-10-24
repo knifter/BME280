@@ -17,8 +17,7 @@
 #ifndef __BME280_H
 #define __BME280_H
 
-#include "Arduino.h"
-
+#include <Arduino.h>
 #include <TwoWireDevice.h>
 
 /*=========================================================================
@@ -98,51 +97,8 @@ class BME280: public TwoWireDevice {
         void readCoefficients(void);
         bool isReadingCalibration(void);
 
-        int16_t   readS16(uint8_t reg);
         uint16_t  read16_LE(uint8_t reg); // little endian
         int16_t   readS16_LE(uint8_t reg); // little endian
-
-        /*=========================================================================
-        // REGISTERS
-        -----------------------------------------------------------------------*/
-        enum
-        {
-            REG_DIG_T1              = 0x88,
-            REG_DIG_T2              = 0x8A,
-            REG_DIG_T3              = 0x8C,
-
-            REG_DIG_P1              = 0x8E,
-            REG_DIG_P2              = 0x90,
-            REG_DIG_P3              = 0x92,
-            REG_DIG_P4              = 0x94,
-            REG_DIG_P5              = 0x96,
-            REG_DIG_P6              = 0x98,
-            REG_DIG_P7              = 0x9A,
-            REG_DIG_P8              = 0x9C,
-            REG_DIG_P9              = 0x9E,
-
-            REG_DIG_H1              = 0xA1,
-            REG_DIG_H2              = 0xE1,
-            REG_DIG_H3              = 0xE3,
-            REG_DIG_H4              = 0xE4,
-            REG_DIG_H5              = 0xE5,
-            REG_DIG_H6              = 0xE7,
-
-            REG_CHIPID             = 0xD0,
-            REG_VERSION            = 0xD1,
-            REG_SOFTRESET          = 0xE0,
-
-            REG_CAL26              = 0xE1,  // R calibration stored in 0xE1-0xF0
-
-            REG_CONTROLHUMID       = 0xF2,
-            REG_STATUS             = 0XF3,
-            REG_CONTROL            = 0xF4,
-            REG_CONFIG             = 0xF5,
-            REG_PRESSUREDATA       = 0xF7,
-            REG_TEMPDATA           = 0xFA,
-            REG_HUMIDDATA          = 0xFD
-        };
-        /*=========================================================================*/
 
         /*=========================================================================
         CALIBRATION DATA
