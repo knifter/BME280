@@ -54,6 +54,16 @@
 #define REG_TEMPDATA            0xFA
 #define REG_HUMIDDATA           0xFD
 
+uint16_t from_LE(uint16_t BE)
+{
+    return (BE >> 8) | (BE << 8);
+};
+
+int16_t from_SLE(uint8_t UBE)
+{
+    return (int16_t) from_LE(UBE);
+};
+
 /**************************************************************************/
 /*!
     @brief  Initialise sensor with given parameters / settings
@@ -90,12 +100,12 @@ bool BME280::begin()
 
 uint8_t BME280::readManufacturerId()
 {
-    return read8(REG_CHIPID);
+    return readreg8(REG_CHIPID);
 }
 
 void BME280::reset()
 {
-    write8(REG_SOFTRESET, SOFTRESET_RESET);
+    writereg8(REG_SOFTRESET, SOFTRESET_RESET);
     return;
 }
 
@@ -116,17 +126,17 @@ void BME280::setSampling(sensor_mode       mode,
 {
     _configReg.filter = filter;
     _configReg.t_sb   = duration;
-    write8(REG_CONFIG, _configReg.get());
+    writereg8(REG_CONFIG, _configReg.get());
 
     _humReg.osrs_h    = humSampling;
-    write8(REG_CONTROLHUMID, _humReg.get());
+    writereg8(REG_CONTROLHUMID, _humReg.get());
 
     // you must make sure to also set REGISTER_CONTROL after setting the
     // CONTROLHUMID register, otherwise the values won't be applied (see DS 5.4.3)
     _measReg.mode     = mode;
     _measReg.osrs_t   = tempSampling;
     _measReg.osrs_p   = pressSampling;
-    write8(REG_CONTROL, _measReg.get());
+    writereg8(REG_CONTROL, _measReg.get());
 }
 
 /**************************************************************************/
@@ -143,11 +153,11 @@ void BME280::takeForcedMeasurement()
     if (_measReg.mode == MODE_FORCED) 
     {
         // set to forced mode, i.e. "take next measurement"
-        write8(REG_CONTROL, _measReg.get());
+        writereg8(REG_CONTROL, _measReg.get());
 
         // wait until measurement has been completed, otherwise we would read
         // the values from the last measurement
-        while (read8(REG_STATUS) & STATUS_MEASURING)
+        while (readreg8(REG_STATUS) & STATUS_MEASURING)
 		    delay(1);
     }
 }
@@ -160,29 +170,29 @@ void BME280::takeForcedMeasurement()
 /**************************************************************************/
 void BME280::readCoefficients(void)
 {
-    _bme280_calib.dig_T1 = read16_LE(REG_DIG_T1);
-    _bme280_calib.dig_T2 = readS16_LE(REG_DIG_T2);
-    _bme280_calib.dig_T3 = readS16_LE(REG_DIG_T3);
-    // _bme280_calib.dig_T1 = read16(REG_DIG_T1);
+    _bme280_calib.dig_T1 = from_LE(readreg16(REG_DIG_T1));
+    _bme280_calib.dig_T2 = from_SLE(readreg16(REG_DIG_T2));
+    _bme280_calib.dig_T3 = from_SLE(readreg16(REG_DIG_T3));
+    // _bme280_calib.dig_T1 = readreg16(REG_DIG_T1);
     // _bme280_calib.dig_T2 = readS16(REG_DIG_T2);
     // _bme280_calib.dig_T3 = readS16(REG_DIG_T3);
 
-    _bme280_calib.dig_P1 = read16_LE(REG_DIG_P1);
-    _bme280_calib.dig_P2 = readS16_LE(REG_DIG_P2);
-    _bme280_calib.dig_P3 = readS16_LE(REG_DIG_P3);
-    _bme280_calib.dig_P4 = readS16_LE(REG_DIG_P4);
-    _bme280_calib.dig_P5 = readS16_LE(REG_DIG_P5);
-    _bme280_calib.dig_P6 = readS16_LE(REG_DIG_P6);
-    _bme280_calib.dig_P7 = readS16_LE(REG_DIG_P7);
-    _bme280_calib.dig_P8 = readS16_LE(REG_DIG_P8);
-    _bme280_calib.dig_P9 = readS16_LE(REG_DIG_P9);
+    _bme280_calib.dig_P1 = from_LE(readreg16(REG_DIG_P1));
+    _bme280_calib.dig_P2 = from_SLE(readreg16(REG_DIG_P2));
+    _bme280_calib.dig_P3 = from_SLE(readreg16(REG_DIG_P3));
+    _bme280_calib.dig_P4 = from_SLE(readreg16(REG_DIG_P4));
+    _bme280_calib.dig_P5 = from_SLE(readreg16(REG_DIG_P5));
+    _bme280_calib.dig_P6 = from_SLE(readreg16(REG_DIG_P6));
+    _bme280_calib.dig_P7 = from_SLE(readreg16(REG_DIG_P7));
+    _bme280_calib.dig_P8 = from_SLE(readreg16(REG_DIG_P8));
+    _bme280_calib.dig_P9 = from_SLE(readreg16(REG_DIG_P9));
 
-    _bme280_calib.dig_H1 = read8(REG_DIG_H1);
-    _bme280_calib.dig_H2 = readS16_LE(REG_DIG_H2);
-    _bme280_calib.dig_H3 = read8(REG_DIG_H3);
-    _bme280_calib.dig_H4 = (read8(REG_DIG_H4) << 4) | (read8(REG_DIG_H4+1) & 0xF);
-    _bme280_calib.dig_H5 = (read8(REG_DIG_H5+1) << 4) | (read8(REG_DIG_H5) >> 4);
-    _bme280_calib.dig_H6 = (int8_t)read8(REG_DIG_H6);
+    _bme280_calib.dig_H1 = readreg8(REG_DIG_H1);
+    _bme280_calib.dig_H2 = from_SLE(readreg16(REG_DIG_H2));
+    _bme280_calib.dig_H3 = readreg8(REG_DIG_H3);
+    _bme280_calib.dig_H4 = (readreg8(REG_DIG_H4) << 4) | (readreg8(REG_DIG_H4+1) & 0xF);
+    _bme280_calib.dig_H5 = (readreg8(REG_DIG_H5+1) << 4) | (readreg8(REG_DIG_H5) >> 4);
+    _bme280_calib.dig_H6 = (int8_t)readreg8(REG_DIG_H6);
 }
 
 /**************************************************************************/
@@ -192,7 +202,7 @@ void BME280::readCoefficients(void)
 /**************************************************************************/
 bool BME280::isReadingCalibration(void)
 {
-  return (read8(REG_STATUS) & STATUS_UPDATE);
+  return (readreg8(REG_STATUS) & STATUS_UPDATE);
 }
 
 /**************************************************************************/
@@ -227,7 +237,7 @@ float BME280::readTemperature(void)
 {
     int32_t var1, var2;
 
-    int32_t adc_T = read24(REG_TEMPDATA);
+    int32_t adc_T = readreg24(REG_TEMPDATA);
     if (adc_T == 0x800000) // value in case temp measurement was disabled
         return NAN;
     adc_T >>= 4;
@@ -256,7 +266,7 @@ float BME280::readPressure(void) {
 
     readTemperature(); // must be done first to get t_fine
 
-    int32_t adc_P = read24(REG_PRESSUREDATA);
+    int32_t adc_P = readreg24(REG_PRESSUREDATA);
     if (adc_P == 0x800000) // value in case pressure measurement was disabled
         return NAN;
     adc_P >>= 4;
@@ -291,7 +301,7 @@ float BME280::readHumidity(void)
 {
     readTemperature(); // must be done first to get t_fine
 
-    int32_t adc_H = read16(REG_HUMIDDATA);
+    int32_t adc_H = readreg16(REG_HUMIDDATA);
     if (adc_H == 0x8000) // value in case humidity measurement was disabled
         return NAN;
 
@@ -376,15 +386,4 @@ float BME280::seaLevelForAltitude(float altitude, float atmospheric)
     //  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
 
     return atmospheric / pow(1.0 - (altitude/44330.0), 5.255);
-}
-
-uint16_t BME280::read16_LE(uint8_t reg)
-{
-    uint16_t temp = read16(reg);
-    return (temp >> 8) | (temp << 8);
-}
-
-int16_t BME280::readS16_LE(uint8_t reg)
-{
-    return (int16_t)read16_LE(reg);
 }

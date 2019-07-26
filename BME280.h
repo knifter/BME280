@@ -28,7 +28,7 @@
 
 class BME280: public TwoWireDevice {
     public:
-        BME280(TwoWire *wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(wire, addr) {};
+        BME280(TwoWire &wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(wire, addr) {};
         BME280(const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(addr) {};
 
         bool begin();
@@ -97,8 +97,8 @@ class BME280: public TwoWireDevice {
         void readCoefficients(void);
         bool isReadingCalibration(void);
 
-        uint16_t  read16_LE(uint8_t reg); // little endian
-        int16_t   readS16_LE(uint8_t reg); // little endian
+        uint16_t  readreg16_LE(uint8_t reg);    // little endian
+        int16_t   readregS16_LE(uint8_t reg);   // little endian
 
         /*=========================================================================
         CALIBRATION DATA
