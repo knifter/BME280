@@ -97,9 +97,6 @@ class BME280: public TwoWireDevice {
         void readCoefficients(void);
         bool isReadingCalibration(void);
 
-        uint16_t  readreg16_LE(uint8_t reg);    // little endian
-        int16_t   readregS16_LE(uint8_t reg);   // little endian
-
         /*=========================================================================
         CALIBRATION DATA
         -----------------------------------------------------------------------*/

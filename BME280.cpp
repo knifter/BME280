@@ -54,15 +54,8 @@
 #define REG_TEMPDATA            0xFA
 #define REG_HUMIDDATA           0xFD
 
-uint16_t from_LE(uint16_t BE)
-{
-    return (BE >> 8) | (BE << 8);
-};
-
-int16_t from_SLE(uint8_t UBE)
-{
-    return (int16_t) from_LE(UBE);
-};
+#define FROM_LE(x)      ((x >> 8) | (x << 8))
+#define FROM_SLE(x)     ((int16_t)FROM_LE(x))
 
 /**************************************************************************/
 /*!
@@ -170,25 +163,25 @@ void BME280::takeForcedMeasurement()
 /**************************************************************************/
 void BME280::readCoefficients(void)
 {
-    _bme280_calib.dig_T1 = from_LE(readreg16(REG_DIG_T1));
-    _bme280_calib.dig_T2 = from_SLE(readreg16(REG_DIG_T2));
-    _bme280_calib.dig_T3 = from_SLE(readreg16(REG_DIG_T3));
+    _bme280_calib.dig_T1 = FROM_LE(readreg16(REG_DIG_T1));
+    _bme280_calib.dig_T2 = FROM_SLE(readreg16(REG_DIG_T2));
+    _bme280_calib.dig_T3 = FROM_SLE(readreg16(REG_DIG_T3));
     // _bme280_calib.dig_T1 = readreg16(REG_DIG_T1);
     // _bme280_calib.dig_T2 = readS16(REG_DIG_T2);
     // _bme280_calib.dig_T3 = readS16(REG_DIG_T3);
 
-    _bme280_calib.dig_P1 = from_LE(readreg16(REG_DIG_P1));
-    _bme280_calib.dig_P2 = from_SLE(readreg16(REG_DIG_P2));
-    _bme280_calib.dig_P3 = from_SLE(readreg16(REG_DIG_P3));
-    _bme280_calib.dig_P4 = from_SLE(readreg16(REG_DIG_P4));
-    _bme280_calib.dig_P5 = from_SLE(readreg16(REG_DIG_P5));
-    _bme280_calib.dig_P6 = from_SLE(readreg16(REG_DIG_P6));
-    _bme280_calib.dig_P7 = from_SLE(readreg16(REG_DIG_P7));
-    _bme280_calib.dig_P8 = from_SLE(readreg16(REG_DIG_P8));
-    _bme280_calib.dig_P9 = from_SLE(readreg16(REG_DIG_P9));
+    _bme280_calib.dig_P1 = FROM_LE(readreg16(REG_DIG_P1));
+    _bme280_calib.dig_P2 = FROM_SLE(readreg16(REG_DIG_P2));
+    _bme280_calib.dig_P3 = FROM_SLE(readreg16(REG_DIG_P3));
+    _bme280_calib.dig_P4 = FROM_SLE(readreg16(REG_DIG_P4));
+    _bme280_calib.dig_P5 = FROM_SLE(readreg16(REG_DIG_P5));
+    _bme280_calib.dig_P6 = FROM_SLE(readreg16(REG_DIG_P6));
+    _bme280_calib.dig_P7 = FROM_SLE(readreg16(REG_DIG_P7));
+    _bme280_calib.dig_P8 = FROM_SLE(readreg16(REG_DIG_P8));
+    _bme280_calib.dig_P9 = FROM_SLE(readreg16(REG_DIG_P9));
 
     _bme280_calib.dig_H1 = readreg8(REG_DIG_H1);
-    _bme280_calib.dig_H2 = from_SLE(readreg16(REG_DIG_H2));
+    _bme280_calib.dig_H2 = FROM_SLE(readreg16(REG_DIG_H2));
     _bme280_calib.dig_H3 = readreg8(REG_DIG_H3);
     _bme280_calib.dig_H4 = (readreg8(REG_DIG_H4) << 4) | (readreg8(REG_DIG_H4+1) & 0xF);
     _bme280_calib.dig_H5 = (readreg8(REG_DIG_H5+1) << 4) | (readreg8(REG_DIG_H5) >> 4);
