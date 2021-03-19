@@ -23,21 +23,21 @@
 /*=========================================================================
     I2C ADDRESS/BITS
     -----------------------------------------------------------------------*/
+// #define DEBUG
+#define BMP280_ADDRESS_DEFAULT              (0x76)
 #define BME280_ADDRESS_DEFAULT              (0x76)
 /*=========================================================================*/
 
-class BME280: public TwoWireDevice {
+class BMP280: public TwoWireDevice 
+{
     public:
-        BME280(TwoWire &wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(wire, addr) {};
-        BME280(const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(addr) {};
+        BMP280(TwoWire &wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(wire, addr) {};
+        BMP280(const uint8_t addr = BME280_ADDRESS_DEFAULT) : TwoWireDevice(addr) {};
 
         bool begin();
         uint8_t readManufacturerId();
         void reset();
         uint8_t getLastError();
-
-        // bool begin(const uint8_t addr = BME280_ADDRESS_DEFAULT) { return TwoWireDevice::begin(addr) && init(); };
-        // bool begin(TwoWire *wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) { return TwoWireDevice::begin(wire, addr) && init(); };
 
         enum sensor_sampling {
             SAMPLING_NONE = 0b000,
@@ -74,56 +74,45 @@ class BME280: public TwoWireDevice {
             STANDBY_MS_1000 = 0b101
         };
 
-        void setSampling(sensor_mode mode  = MODE_NORMAL,
-              sensor_sampling tempSampling  = SAMPLING_X16,
-              sensor_sampling pressSampling = SAMPLING_X16,
-              sensor_sampling humSampling   = SAMPLING_X16,
-              sensor_filter filter          = FILTER_OFF,
-              standby_duration duration     = STANDBY_MS_0_5
-              );
+        void setSampling(
+            sensor_mode mode = MODE_NORMAL,
+            sensor_sampling tempSampling = SAMPLING_X16,
+            sensor_sampling pressSampling = SAMPLING_X16,
+            sensor_filter filter = FILTER_OFF,
+            standby_duration duration = STANDBY_MS_0_5
+            );
 
         void takeForcedMeasurement();
         float readTemperature(void);
         float readPressure(void);
-        float readHumidity(void);
 
         float readAltitude(float seaLevel);
         float seaLevelForAltitude(float altitude, float pressure);
         float readAltitudeTC(float seaLevel, float atmospheric, float temperature);
 
     protected:
-        bool init();
-
+        // Calibration coefficients
         void readCoefficients(void);
         bool isReadingCalibration(void);
-
-        /*=========================================================================
-        CALIBRATION DATA
-        -----------------------------------------------------------------------*/
-        typedef struct
+        struct
         {
-            uint16_t dig_T1;
-            int16_t  dig_T2;
-            int16_t  dig_T3;
+            uint16_t T1;
+            int16_t  T2;
+            int16_t  T3;
+        } _calibt;
 
-            uint16_t dig_P1;
-            int16_t  dig_P2;
-            int16_t  dig_P3;
-            int16_t  dig_P4;
-            int16_t  dig_P5;
-            int16_t  dig_P6;
-            int16_t  dig_P7;
-            int16_t  dig_P8;
-            int16_t  dig_P9;
-
-            uint8_t  dig_H1;
-            int16_t  dig_H2;
-            uint8_t  dig_H3;
-            int16_t  dig_H4;
-            int16_t  dig_H5;
-            int8_t   dig_H6;
-        } calib_data_t;
-        /*=========================================================================*/
+        struct
+        {
+            uint16_t P1;
+            int16_t  P2;
+            int16_t  P3;
+            int16_t  P4;
+            int16_t  P5;
+            int16_t  P6;
+            int16_t  P7;
+            int16_t  P8;
+            int16_t  P9;
+        } _calibp;
 
         // The config register
         typedef struct {
@@ -188,6 +177,42 @@ class BME280: public TwoWireDevice {
         } ctrl_meas_t;
         ctrl_meas_t _measReg;
 
+        int32_t _t_fine;
+
+    private:
+        BMP280(const BMP280&);
+        BMP280& operator=(const BMP280&);
+};
+
+class BME280 : public BMP280
+{
+    public:
+        BME280(TwoWire &wire, const uint8_t addr = BME280_ADDRESS_DEFAULT) : BMP280(wire, addr) {};
+        BME280(const uint8_t addr = BME280_ADDRESS_DEFAULT) : BMP280(addr) {};
+
+        void setSampling(BMP280::sensor_mode mode = MODE_NORMAL,
+              BMP280::sensor_sampling tempSampling = SAMPLING_X16,
+              BMP280::sensor_sampling pressSampling = SAMPLING_X16,
+              BMP280::sensor_sampling humSampling = SAMPLING_X16,
+              BMP280::sensor_filter filter = FILTER_OFF,
+              BMP280::standby_duration duration = STANDBY_MS_0_5
+              );
+
+        float readHumidity(void);
+
+    private:
+        // Calibration co-efficients
+        void readCoefficients(void);        
+        struct
+        {
+            uint8_t  H1;
+            int16_t  H2;
+            uint8_t  H3;
+            int16_t  H4;
+            int16_t  H5;
+            int8_t   H6;
+        } _calibh;
+        
         // The ctrl_hum register
         typedef struct {
             // unused - don't set
@@ -206,14 +231,7 @@ class BME280: public TwoWireDevice {
                 return (osrs_h);
             }
         } ctrl_hum_t;
-        ctrl_hum_t _humReg;
-
-        int32_t   t_fine;
-        calib_data_t _bme280_calib;
-
-    private:
-        BME280(const BME280&);
-        BME280& operator=(const BME280&);
+        ctrl_hum_t _humReg;    
 };
 
 #endif // __BME280_H
